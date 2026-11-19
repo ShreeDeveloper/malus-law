@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Law of Malus - Virtual Physics Lab</title>
+<style>
+  :root {
+    --bg: #f8fafc;
+    --panel: #ffffff;
+    --panel-alt: #f1f5f9;
+    --border: #cbd5e1;
+    --text: #0f172a;
+    --muted: #475569;
+    --accent: #0284c7;
+    --accent-hover: #0369a1;
+    --green: #059669;
+    --amber: #d97706;
+    --red: #dc2626;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  body { background: var(--bg); color: var(--text); padding: 16px; line-height: 1.45; }
+  header {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 20px; margin-bottom: 16px; gap: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  header h1 { font-size: 1.25rem; color: var(--accent); }
+  header p { font-size: 0.85rem; color: var(--muted); }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tab-btn {
+    background: var(--panel-alt); color: var(--text); border: 1px solid var(--border);
+    padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .tab-btn.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .grid-main { display: grid; grid-template-columns: 1.45fr 1fr; gap: 16px; }
+  @media (max-width: 960px) { .grid-main { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .card h2 {
+    font-size: 1rem; color: var(--accent); margin-bottom: 12px;
+    border-bottom: 1px solid var(--border); padding-bottom: 8px;
+  }
+
+  .canvas-wrap {
+    width: 100%; background: #ffffff; border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden; display: flex; justify-content: center; align-items: center;
+  }
+  canvas { display: block; max-width: 100%; height: auto; }
+
+  .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+  @media (max-width: 600px) { .controls-grid { grid-template-columns: 1fr; } }
+
+  .control-box {
+    background: var(--panel-alt); border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+  }
+  .control-box.full { grid-column: 1 / -1; }
+  .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.88rem; }
+  .label-row strong { color: var(--text); }
+
+  .switch-btn {
+    width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid transparent; font-weight: 700;
+    cursor: pointer; font-size: 0.88rem; transition: opacity 0.15s;
+  }
+  .switch-btn.off { background: #e2e8f0; color: #334155; border-color: #cbd5e1; }
+  .switch-btn.on { background: var(--green); color: #ffffff; }
+
+  .angle-control-row {
+    display: flex; align-items: center; gap: 8px; margin-top: 6px;
+  }
+  .step-btn {
+    background: #ffffff; color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; min-width: 38px; height: 36px; font-size: 1.1rem; font-weight: 700;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .step-btn:hover { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+  .step-btn:active { transform: scale(0.96); }
+
+  input[type="range"] {
+    flex: 1; accent-color: var(--accent); height: 6px; cursor: pointer; min-width: 100px;
+  }
+  .angle-input-wrap {
+    display: inline-flex; align-items: center; background: #ffffff;
+    border: 1px solid var(--border); border-radius: 8px; padding: 0 8px; height: 36px;
+  }
+  .angle-input-wrap:focus-within { border-color: var(--accent); }
+  .angle-input-wrap input[type="number"] {
+    width: 58px; background: transparent; border: none; color: var(--accent);
+    font-weight: 700; font-size: 0.95rem; text-align: right; outline: none;
+    -moz-appearance: textfield;
+  }
+  .angle-input-wrap input[type="number"]::-webkit-outer-spin-button,
+  .angle-input-wrap input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+  .angle-input-wrap span { color: var(--muted); font-weight: 700; margin-left: 2px; font-size: 0.9rem; }
+
+  .preset-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .preset-btn {
+    background: #ffffff; color: var(--muted); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 9px; font-size: 0.78rem; cursor: pointer; font-weight: 600;
+  }
+  .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .meter-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+  .meter {
+    background: var(--panel-alt); border: 1px solid var(--border); border-radius: 10px; padding: 10px; text-align: center;
+  }
+  .meter .m-title { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+  .meter .m-val { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.25rem; font-weight: 700; color: var(--amber); }
+  .meter .m-val.green { color: var(--green); }
+  .meter .m-val.blue { color: var(--accent); }
+
+  .btn-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .action-btn {
+    background: var(--accent); color: #ffffff; border: none; border-radius: 8px;
+    padding: 8px 13px; font-weight: 700; font-size: 0.83rem; cursor: pointer;
+  }
+  .action-btn:hover { background: var(--accent-hover); color: #fff; }
+  .action-btn.secondary { background: #e2e8f0; color: var(--text); border: 1px solid var(--border); }
+  .action-btn.secondary:hover { background: #cbd5e1; }
+  .action-btn.danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+  .action-btn.danger:hover { background: var(--red); color: #fff; }
+
+  .part-switch { display: flex; gap: 6px; margin-bottom: 10px; }
+  .part-btn {
+    flex: 1; padding: 7px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--panel-alt); color: var(--muted); font-weight: 600; font-size: 0.82rem; cursor: pointer;
+  }
+  .part-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .table-scroll { max-height: 285px; overflow-y: auto; overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; text-align: center; }
+  th, td { padding: 7px 6px; border-bottom: 1px solid var(--border); }
+  th { background: var(--panel-alt); color: var(--accent); position: sticky; top: 0; }
+  tr:nth-child(even) { background: rgba(15, 23, 42, 0.02); }
+
+  .graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 900px) { .graphs-grid { grid-template-columns: 1fr; } }
+
+  .theory-box h3 { color: var(--accent); font-size: 0.98rem; margin: 14px 0 6px; }
+  .theory-box p, .theory-box li { color: #334155; font-size: 0.9rem; margin-bottom: 6px; }
+  .theory-box ul, .theory-box ol { padding-left: 20px; }
+  .viva-item {
+    background: var(--panel-alt); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 10px;
+  }
+  .viva-q { font-weight: 700; color: var(--accent); cursor: pointer; font-size: 0.92rem; }
+  .viva-a { margin-top: 6px; color: #334155; font-size: 0.88rem; display: none; }
+  .viva-item.open .viva-a { display: block; }
+  .status-msg { font-size: 0.8rem; color: var(--amber); margin-top: 6px; min-height: 18px; }
+
+  .formula-box {
+    font-family: monospace; background: var(--panel-alt); border: 1px solid var(--border);
+    padding: 8px 12px; border-radius: 6px; display: inline-block; color: var(--text); font-weight: 600;
+  }
+
+  footer.site-footer {
+    text-align: center; margin-top: 20px; padding: 14px 16px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    font-size: 0.85rem; color: var(--muted);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  footer.site-footer strong { color: var(--text); }
+
+  /* Mobile Responsive Enhancements */
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    header { padding: 12px 14px; flex-direction: column; align-items: flex-start; }
+    header h1 { font-size: 1.1rem; }
+    .tabs { width: 100%; }
+    .tab-btn { flex: 1 1 auto; text-align: center; padding: 8px 10px; font-size: 0.8rem; }
+    .card { padding: 12px; }
+    .meter-grid { grid-template-columns: 1fr; gap: 8px; }
+    .meter { display: flex; justify-content: space-between; align-items: center; text-align: left; padding: 10px 14px; }
+    .meter .m-title { margin-bottom: 0; font-size: 0.82rem; }
+    .meter .m-val { font-size: 1.1rem; }
+    .angle-control-row { flex-wrap: wrap; }
+    .angle-control-row input[type="range"] { order: 1; flex: 1 1 100%; min-width: 100%; margin-bottom: 4px; }
+    .angle-control-row #decAngleBtn { order: 2; flex: 1; }
+    .angle-control-row .angle-input-wrap { order: 3; flex: 1; justify-content: center; }
+    .angle-control-row #incAngleBtn { order: 4; flex: 1; }
+    .preset-btn { flex: 1 1 20%; text-align: center; padding: 6px 8px; }
+    .btn-bar .action-btn { flex: 1 1 100%; text-align: center; padding: 10px 12px; }
+    .part-switch { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Experiment 5: Verification of Law of Malus</h1>
+    <p>Interactive Optical Bench Simulator &bull; Intensity Relation: I = I<sub>max</sub> cos&sup2;&theta;</p>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="simTab">Simulator &amp; Graphs</button>
+    <button class="tab-btn" data-tab="theoryTab">Procedure &amp; Theory</button>
+    <button class="tab-btn" data-tab="vivaTab">Viva Questions</button>
+  </div>
+</header>
+
+<div id="simTab" class="tab-content active">
+  <div class="grid-main">
+    <!-- Left: Optical Bench & Controls -->
+    <div class="card">
+      <h2>Optical Bench Setup</h2>
+      <div class="canvas-wrap">
+        <canvas id="benchCanvas" width="760" height="270"></canvas>
+      </div>
+
+      <div class="controls-grid">
+        <div class="control-box">
+          <div class="label-row">
+            <strong>1. LDR Circuit Power</strong>
+            <span id="ldrStateText" style="color:var(--muted);font-size:0.8rem;">OFF</span>
+          </div>
+          <button id="toggleLdrBtn" class="switch-btn off">Turn LDR Circuit ON</button>
+        </div>
+
+        <div class="control-box">
+          <div class="label-row">
+            <strong>2. Light Source (S)</strong>
+            <span id="lampStateText" style="color:var(--muted);font-size:0.8rem;">OFF</span>
+          </div>
+          <button id="toggleLampBtn" class="switch-btn off">Turn Light Source ON</button>
+        </div>
+
+        <div class="control-box full">
+          <div class="label-row">
+            <strong>3. Analyzer Angle (&theta;)</strong>
+            <span style="color:var(--muted);font-size:0.8rem;">Range: 0&deg; to 360&deg; (Step: 1&deg;)</span>
+          </div>
+          <div class="angle-control-row">
+            <button id="decAngleBtn" class="step-btn" title="Decrease angle by 1 degree">&minus;</button>
+            <input type="range" id="angleSlider" min="0" max="360" step="1" value="0">
+            <button id="incAngleBtn" class="step-btn" title="Increase angle by 1 degree">+</button>
+            <div class="angle-input-wrap" title="Enter exact angle (0 to 360)">
+              <input type="number" id="angleInput" min="0" max="360" step="1" value="0">
+              <span>&deg;</span>
+            </div>
+          </div>
+          <div class="preset-row">
+            <button class="preset-btn" data-angle="0">0&deg;</button>
+            <button class="preset-btn" data-angle="30">30&deg;</button>
+            <button class="preset-btn" data-angle="45">45&deg;</button>
+            <button class="preset-btn" data-angle="60">60&deg;</button>
+            <button class="preset-btn" data-angle="90">90&deg;</button>
+            <button class="preset-btn" data-angle="180">180&deg;</button>
+            <button class="preset-btn" data-angle="270">270&deg;</button>
+            <button class="preset-btn" data-angle="360">360&deg;</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="meter-grid">
+        <div class="meter">
+          <div class="m-title">Dark Current (I<sub>0</sub>)</div>
+          <div class="m-val blue" id="darkCurrentVal">0.0 &mu;A</div>
+        </div>
+        <div class="meter">
+          <div class="m-title">Observed Current (I)</div>
+          <div class="m-val" id="obsCurrentVal">0.0 &mu;A</div>
+        </div>
+        <div class="meter">
+          <div class="m-title">Actual Current (I &minus; I<sub>0</sub>)</div>
+          <div class="m-val green" id="netCurrentVal">0.0 &mu;A</div>
+        </div>
+      </div>
+
+      <div class="btn-bar">
+        <button id="recordDarkBtn" class="action-btn secondary">Record Dark Current (I<sub>0</sub>)</button>
+        <button id="logReadingBtn" class="action-btn">Log Reading to Table</button>
+        <button id="autoFillBtn" class="action-btn secondary">Auto-Fill Active Table</button>
+        <button id="clearTableBtn" class="action-btn danger">Clear Table</button>
+      </div>
+      <div id="statusMsg" class="status-msg"></div>
+    </div>
+
+    <!-- Right: Observation Table -->
+    <div class="card">
+      <h2>Observation Table</h2>
+      <div class="part-switch">
+        <button class="part-btn active" data-part="A">Part A: 0&deg;&ndash;90&deg; (10&deg; steps)</button>
+        <button class="part-btn" data-part="B">Part B: 0&deg;&ndash;360&deg; (30&deg; steps)</button>
+      </div>
+
+      <div id="tableWrapA" class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>&theta; (deg)</th>
+              <th>cos &theta;</th>
+              <th>cos&sup2; &theta;</th>
+              <th>I (&mu;A)</th>
+              <th>I &minus; I<sub>0</sub> (&mu;A)</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyA"></tbody>
+        </table>
+      </div>
+
+      <div id="tableWrapB" class="table-scroll" style="display:none;">
+        <table>
+          <thead>
+            <tr>
+              <th>&theta; (deg)</th>
+              <th>I (&mu;A)</th>
+              <th>I &minus; I<sub>0</sub> (&mu;A)</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyB"></tbody>
+        </table>
+      </div>
+
+      <div class="btn-bar" style="margin-top:12px;">
+        <button id="exportCsvBtn" class="action-btn secondary">Export Table to CSV</button>
+      </div>
+      <p style="font-size:0.78rem; color:var(--muted); margin-top:8px;">
+        Tip: Turn ON LDR Circuit first (Lamp OFF) to measure Dark Current <strong>I<sub>0</sub></strong>, then turn ON the Light Source to log photocurrent values across angles.
+      </p>
+    </div>
+  </div>
+
+  <!-- Graphs -->
+  <div class="graphs-grid">
+    <div class="card">
+      <h2>Graph 1: Actual Current (I &minus; I<sub>0</sub>) vs cos&sup2;&theta; (Part A)</h2>
+      <div class="canvas-wrap">
+        <canvas id="linearGraphCanvas" width="540" height="320"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Graph 2: Polar Plot of (I &minus; I<sub>0</sub>) vs &theta; (Part B)</h2>
+      <div class="canvas-wrap">
+        <canvas id="polarGraphCanvas" width="540" height="320"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Theory Tab -->
+<div id="theoryTab" class="tab-content">
+  <div class="card theory-box">
+    <h2>Aim, Apparatus &amp; Experimental Procedure</h2>
+    <h3>Aim</h3>
+    <p>To verify the Law of Malus using a polarizer-analyzer pair and a Light Dependent Resistor (LDR) / photocell detector.</p>
+
+    <h3>Apparatus</h3>
+    <ul>
+      <li>Optical bench with upright stands</li>
+      <li>Incandescent light source (S) and collimating convex lens (L)</li>
+      <li>Fixed Polarizer (P) and rotatable Analyzer (A) mounted on a 360&deg; circular scale</li>
+      <li>LDR / Photocell sensor connected in series with a DC power supply and digital micro-ammeter</li>
+    </ul>
+
+    <h3>Formula (Law of Malus)</h3>
+    <p>When completely plane-polarized light of intensity <strong>I<sub>max</sub></strong> is incident on an analyzer whose transmission axis makes an angle <strong>&theta;</strong> with that of the polarizer, the transmitted light intensity <strong>I</strong> is given by:</p>
+    <p class="formula-box">I = I<sub>max</sub> cos&sup2;&theta;</p>
+
+    <h3>Procedure</h3>
+    <ol>
+      <li>Switch ON the LDR bias circuit with the light source OFF and record the initial dark current <strong>I<sub>0</sub></strong>.</li>
+      <li>Switch ON the light source and adjust the analyzer to <strong>&theta; = 0&deg;</strong> so that polarizer and analyzer pass axes are parallel (maximum current).</li>
+      <li><strong>Part A:</strong> Rotate the analyzer from 0&deg; to 90&deg; in steps of 10&deg; and record the micro-ammeter current <strong>I</strong>. Compute <strong>cos&theta;</strong>, <strong>cos&sup2;&theta;</strong>, and actual current <strong>(I &minus; I<sub>0</sub>)</strong>.</li>
+      <li><strong>Part B:</strong> Rotate the analyzer through a full circle from 0&deg; to 360&deg; in steps of 30&deg; and record <strong>I</strong> and <strong>(I &minus; I<sub>0</sub>)</strong>.</li>
+      <li>Plot <strong>(I &minus; I<sub>0</sub>)</strong> against <strong>cos&sup2;&theta;</strong> (a straight line through the origin) and a polar graph of <strong>(I &minus; I<sub>0</sub>)</strong> vs <strong>&theta;</strong> (two symmetric lobes).</li>
+    </ol>
+  </div>
+</div>
+
+<!-- Viva Tab -->
+<div id="vivaTab" class="tab-content">
+  <div class="card theory-box">
+    <h2>Viva-Voce Questions &amp; Answers (Click a question to reveal)</h2>
+    <div class="viva-item open">
+      <div class="viva-q">1. What is the difference between unpolarized light and plane-polarized light?</div>
+      <div class="viva-a">In unpolarized light, the electric field vector vibrates symmetrically in all directions perpendicular to the direction of wave propagation. In plane-polarized light, the electric field vibrations are confined to a single plane perpendicular to the propagation direction.</div>
+    </div>
+    <div class="viva-item">
+      <div class="viva-q">2. State the Law of Malus.</div>
+      <div class="viva-a">The Law of Malus states that when a beam of completely plane-polarized light is incident on an analyzer, the intensity of the emergent light varies directly as the square of the cosine of the angle between the transmission planes of the analyzer and the polarizer: I = I<sub>max</sub> cos&sup2;&theta;.</div>
+    </div>
+    <div class="viva-item">
+      <div class="viva-q">3. What happens to the intensity of unpolarized light when it passes through an ideal polarizer?</div>
+      <div class="viva-a">When unpolarized light of intensity I<sub>unpol</sub> passes through an ideal polarizer, the transmitted light becomes plane-polarized and its intensity is reduced to exactly half (I<sub>max</sub> = I<sub>unpol</sub> / 2), regardless of the polarizer's orientation.</div>
+    </div>
+    <div class="viva-item">
+      <div class="viva-q">4. At what angles between the polarizer and analyzer do maxima and minima occur over a full 360&deg; rotation?</div>
+      <div class="viva-a">Maxima occur when the transmission axes are parallel at &theta; = 0&deg;, 180&deg;, and 360&deg; (cos&sup2;&theta; = 1). Minima (extinction) occur when the axes are crossed at &theta; = 90&deg; and 270&deg; (cos&sup2;&theta; = 0).</div>
+    </div>
+    <div class="viva-item">
+      <div class="viva-q">5. Why do we measure and subtract the initial dark current (I<sub>0</sub>) in this experiment?</div>
+      <div class="viva-a">Even when the experimental lamp is turned off, stray ambient light and thermal leakage in the LDR circuit produce a small baseline current I<sub>0</sub>. Subtracting I<sub>0</sub> from the observed current I isolates the true photocurrent caused solely by the transmitted polarized beam.</div>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  &copy; <strong>Shreerang Dahivelkar</strong> &bull; Virtual Physics Lab &mdash; Law of Malus Simulator
+</footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // Simulation State
+  const state = {
+    ldrOn: false,
+    lampOn: false,
+    angle: 0,
+    trueDarkCurrent: 4.2,
+    recordedDarkCurrent: 0.0,
+    maxPhotoCurrent: 148.0,
+    activePart: "A",
+    dataA: {},
+    dataB: {},
+    phase: 0
+  };
+
+  // DOM Elements
+  const benchCanvas = document.getElementById("benchCanvas");
+  const bCtx = benchCanvas.getContext("2d");
+  const linearCanvas = document.getElementById("linearGraphCanvas");
+  const lCtx = linearCanvas.getContext("2d");
+  const polarCanvas = document.getElementById("polarGraphCanvas");
+  const pCtx = polarCanvas.getContext("2d");
+
+  const toggleLdrBtn = document.getElementById("toggleLdrBtn");
+  const toggleLampBtn = document.getElementById("toggleLampBtn");
+  const ldrStateText = document.getElementById("ldrStateText");
+  const lampStateText = document.getElementById("lampStateText");
+
+  const angleSlider = document.getElementById("angleSlider");
+  const angleInput = document.getElementById("angleInput");
+  const decAngleBtn = document.getElementById("decAngleBtn");
+  const incAngleBtn = document.getElementById("incAngleBtn");
+
+  const darkCurrentVal = document.getElementById("darkCurrentVal");
+  const obsCurrentVal = document.getElementById("obsCurrentVal");
+  const netCurrentVal = document.getElementById("netCurrentVal");
+  const statusMsg = document.getElementById("statusMsg");
+
+  const tbodyA = document.getElementById("tbodyA");
+  const tbodyB = document.getElementById("tbodyB");
+  const tableWrapA = document.getElementById("tableWrapA");
+  const tableWrapB = document.getElementById("tableWrapB");
+
+  function setStatus(msg) {
+    statusMsg.textContent = msg;
+  }
+
+  function computeCurrent() {
+    if (!state.ldrOn) return 0.0;
+    const rad = (state.angle * Math.PI) / 180;
+    const cos2 = Math.pow(Math.cos(rad), 2);
+    const photo = state.lampOn ? state.maxPhotoCurrent * cos2 : 0.0;
+    return +(state.trueDarkCurrent + photo).toFixed(1);
+  }
+
+  function updateMeters() {
+    const obs = computeCurrent();
+    const net = state.ldrOn ? Math.max(0, +(obs - state.recordedDarkCurrent).toFixed(1)) : 0.0;
+    darkCurrentVal.textContent = state.recordedDarkCurrent.toFixed(1) + " μA";
+    obsCurrentVal.textContent = obs.toFixed(1) + " μA";
+    netCurrentVal.textContent = net.toFixed(1) + " μA";
+  }
+
+  function setAngle(newAngle) {
+    let val = parseInt(newAngle, 10);
+    if (isNaN(val)) val = 0;
+    if (val < 0) val = 0;
+    if (val > 360) val = 360;
+    state.angle = val;
+    angleSlider.value = val;
+    angleInput.value = val;
+    updateMeters();
+  }
+
+  // Angle Controls
+  angleSlider.addEventListener("input", function () {
+    setAngle(this.value);
+  });
+
+  angleInput.addEventListener("input", function () {
+    if (this.value === "") return;
+    let val = parseInt(this.value, 10);
+    if (!isNaN(val)) {
+      if (val > 360) val = 360;
+      if (val < 0) val = 0;
+      state.angle = val;
+      angleSlider.value = val;
+      updateMeters();
+    }
+  });
+
+  angleInput.addEventListener("blur", function () {
+    setAngle(this.value);
+  });
+
+  angleInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      setAngle(this.value);
+      this.blur();
+    }
+  });
+
+  decAngleBtn.addEventListener("click", function () {
+    setAngle(state.angle - 1);
+  });
+
+  incAngleBtn.addEventListener("click", function () {
+    setAngle(state.angle + 1);
+  });
+
+  document.querySelectorAll(".preset-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      setAngle(this.getAttribute("data-angle"));
+    });
+  });
+
+  // Power Switches
+  toggleLdrBtn.addEventListener("click", function () {
+    state.ldrOn = !state.ldrOn;
+    toggleLdrBtn.textContent = state.ldrOn ? "Turn LDR Circuit OFF" : "Turn LDR Circuit ON";
+    toggleLdrBtn.className = "switch-btn " + (state.ldrOn ? "on" : "off");
+    ldrStateText.textContent = state.ldrOn ? "ON" : "OFF";
+    ldrStateText.style.color = state.ldrOn ? "var(--green)" : "var(--muted)";
+    updateMeters();
+    setStatus(state.ldrOn ? "LDR bias circuit powered ON." : "LDR bias circuit powered OFF.");
+  });
+
+  toggleLampBtn.addEventListener("click", function () {
+    state.lampOn = !state.lampOn;
+    toggleLampBtn.textContent = state.lampOn ? "Turn Light Source OFF" : "Turn Light Source ON";
+    toggleLampBtn.className = "switch-btn " + (state.lampOn ? "on" : "off");
+    lampStateText.textContent = state.lampOn ? "ON" : "OFF";
+    lampStateText.style.color = state.lampOn ? "var(--amber)" : "var(--muted)";
+    updateMeters();
+    setStatus(state.lampOn ? "Light source illuminated." : "Light source turned OFF.");
+  });
+
+  // Record Dark Current
+  document.getElementById("recordDarkBtn").addEventListener("click", function () {
+    if (!state.ldrOn) {
+      setStatus("Please turn ON the LDR Circuit first to measure dark current.");
+      return;
+    }
+    if (state.lampOn) {
+      setStatus("Turn OFF the Light Source before recording Dark Current (I0).");
+      return;
+    }
+    state.recordedDarkCurrent = computeCurrent();
+    updateMeters();
+    renderTables();
+    drawGraphs();
+    setStatus("Dark current I0 = " + state.recordedDarkCurrent.toFixed(1) + " μA recorded.");
+  });
+
+  // Render Observation Tables
+  function renderTables() {
+    tbodyA.innerHTML = "";
+    const keysA = Object.keys(state.dataA).map(Number).sort((a, b) => a - b);
+    if (keysA.length === 0) {
+      tbodyA.innerHTML = '<tr><td colspan="5" style="color:var(--muted);">No readings logged yet.</td></tr>';
+    } else {
+      keysA.forEach(function (a) {
+        const r = state.dataA[a];
+        const c = Math.cos((a * Math.PI) / 180);
+        const net = Math.max(0, +(r.obs - state.recordedDarkCurrent).toFixed(1));
+        const tr = document.createElement("tr");
+        tr.innerHTML = "<td>" + a + "&deg;</td><td>" + c.toFixed(4) + "</td><td>" + (c * c).toFixed(4) + "</td><td>" + r.obs.toFixed(1) + "</td><td>" + net.toFixed(1) + "</td>";
+        tbodyA.appendChild(tr);
+      });
+    }
+
+    tbodyB.innerHTML = "";
+    const keysB = Object.keys(state.dataB).map(Number).sort((a, b) => a - b);
+    if (keysB.length === 0) {
+      tbodyB.innerHTML = '<tr><td colspan="3" style="color:var(--muted);">No readings logged yet.</td></tr>';
+    } else {
+      keysB.forEach(function (a) {
+        const r = state.dataB[a];
+        const net = Math.max(0, +(r.obs - state.recordedDarkCurrent).toFixed(1));
+        const tr = document.createElement("tr");
+        tr.innerHTML = "<td>" + a + "&deg;</td><td>" + r.obs.toFixed(1) + "</td><td>" + net.toFixed(1) + "</td>";
+        tbodyB.appendChild(tr);
+      });
+    }
+  }
+
+  // Log Reading
+  document.getElementById("logReadingBtn").addEventListener("click", function () {
+    if (!state.ldrOn || !state.lampOn) {
+      setStatus("Turn ON both LDR Circuit and Light Source before logging readings.");
+      return;
+    }
+    const obs = computeCurrent();
+    const net = Math.max(0, +(obs - state.recordedDarkCurrent).toFixed(1));
+    const entry = { angle: state.angle, obs: obs, net: net };
+    if (state.activePart === "A") {
+      state.dataA[state.angle] = entry;
+    } else {
+      state.dataB[state.angle] = entry;
+    }
+    renderTables();
+    drawGraphs();
+    setStatus("Logged reading at θ = " + state.angle + "° (I = " + obs.toFixed(1) + " μA).");
+  });
+
+  // Auto-Fill Active Table
+  document.getElementById("autoFillBtn").addEventListener("click", function () {
+    if (!state.ldrOn) {
+      state.ldrOn = true;
+      toggleLdrBtn.textContent = "Turn LDR Circuit OFF";
+      toggleLdrBtn.className = "switch-btn on";
+      ldrStateText.textContent = "ON";
+      ldrStateText.style.color = "var(--green)";
+    }
+    if (state.recordedDarkCurrent === 0.0) {
+      state.recordedDarkCurrent = state.trueDarkCurrent;
+    }
+    if (!state.lampOn) {
+      state.lampOn = true;
+      toggleLampBtn.textContent = "Turn Light Source OFF";
+      toggleLampBtn.className = "switch-btn on";
+      lampStateText.textContent = "ON";
+      lampStateText.style.color = "var(--amber)";
+    }
+
+    if (state.activePart === "A") {
+      for (let a = 0; a <= 90; a += 10) {
+        const rad = (a * Math.PI) / 180;
+        const obs = +(state.trueDarkCurrent + state.maxPhotoCurrent * Math.pow(Math.cos(rad), 2)).toFixed(1);
+        const net = Math.max(0, +(obs - state.recordedDarkCurrent).toFixed(1));
+        state.dataA[a] = { angle: a, obs: obs, net: net };
+      }
+    } else {
+      for (let a = 0; a <= 360; a += 30) {
+        const rad = (a * Math.PI) / 180;
+        const obs = +(state.trueDarkCurrent + state.maxPhotoCurrent * Math.pow(Math.cos(rad), 2)).toFixed(1);
+        const net = Math.max(0, +(obs - state.recordedDarkCurrent).toFixed(1));
+        state.dataB[a] = { angle: a, obs: obs, net: net };
+      }
+    }
+    updateMeters();
+    renderTables();
+    drawGraphs();
+    setStatus("Auto-filled Part " + state.activePart + " observation table.");
+  });
+
+  // Clear Table
+  document.getElementById("clearTableBtn").addEventListener("click", function () {
+    if (state.activePart === "A") {
+      state.dataA = {};
+    } else {
+      state.dataB = {};
+    }
+    renderTables();
+    drawGraphs();
+    setStatus("Cleared Part " + state.activePart + " table.");
+  });
+
+  // Part A / Part B Switch
+  document.querySelectorAll(".part-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".part-btn").forEach(function (b) { b.classList.remove("active"); });
+      this.classList.add("active");
+      state.activePart = this.getAttribute("data-part");
+      tableWrapA.style.display = state.activePart === "A" ? "block" : "none";
+      tableWrapB.style.display = state.activePart === "B" ? "block" : "none";
+    });
+  });
+
+  // Export CSV
+  document.getElementById("exportCsvBtn").addEventListener("click", function () {
+    let csv = "";
+    if (state.activePart === "A") {
+      csv = "Angle (deg),cos(theta),cos^2(theta),Observed Current I (uA),Actual Current I-I0 (uA)\n";
+      Object.keys(state.dataA).map(Number).sort((a, b) => a - b).forEach(function (a) {
+        const r = state.dataA[a];
+        const c = Math.cos((a * Math.PI) / 180);
+        const net = Math.max(0, +(r.obs - state.recordedDarkCurrent).toFixed(1));
+        csv += a + "," + c.toFixed(4) + "," + (c * c).toFixed(4) + "," + r.obs.toFixed(1) + "," + net.toFixed(1) + "\n";
+      });
+    } else {
+      csv = "Angle (deg),Observed Current I (uA),Actual Current I-I0 (uA)\n";
+      Object.keys(state.dataB).map(Number).sort((a, b) => a - b).forEach(function (a) {
+        const r = state.dataB[a];
+        const net = Math.max(0, +(r.obs - state.recordedDarkCurrent).toFixed(1));
+        csv += a + "," + r.obs.toFixed(1) + "," + net.toFixed(1) + "\n";
+      });
+    }
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "law_of_malus_part_" + state.activePart + ".csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Tabs & Viva Toggles
+  document.querySelectorAll(".tab-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.remove("active"); });
+      document.querySelectorAll(".tab-content").forEach(function (c) { c.classList.remove("active"); });
+      this.classList.add("active");
+      document.getElementById(this.getAttribute("data-tab")).classList.add("active");
+    });
+  });
+
+  document.querySelectorAll(".viva-q").forEach(function (q) {
+    q.addEventListener("click", function () {
+      this.parentElement.classList.toggle("open");
+    });
+  });
+
+  // Draw Optical Bench Animation
+  function drawBench() {
+    const w = benchCanvas.width;
+    const h = benchCanvas.height;
+    bCtx.clearRect(0, 0, w, h);
+
+    // Optical bench rail
+    bCtx.fillStyle = "#cbd5e1";
+    bCtx.fillRect(30, 222, w - 60, 14);
+    bCtx.strokeStyle = "#94a3b8";
+    bCtx.strokeRect(30, 222, w - 60, 14);
+
+    // Tick marks on rail
+    bCtx.fillStyle = "#475569";
+    for (let x = 50; x <= w - 50; x += 25) {
+      bCtx.fillRect(x, 222, 1, 6);
+    }
+
+    const axisY = 125;
+    const srcX = 75;
+    const lensX = 195;
+    const polX = 345;
+    const anaX = 515;
+    const ldrX = 675;
+
+    // Optical Axis dashed line
+    bCtx.save();
+    bCtx.setLineDash([5, 5]);
+    bCtx.strokeStyle = "#94a3b8";
+    bCtx.beginPath();
+    bCtx.moveTo(srcX, axisY);
+    bCtx.lineTo(ldrX, axisY);
+    bCtx.stroke();
+    bCtx.restore();
+
+    const rad = (state.angle * Math.PI) / 180;
+    const cosVal = Math.cos(rad);
+    const cos2 = cosVal * cosVal;
+
+    // Light Beams when Lamp ON
+    if (state.lampOn) {
+      // 1. Source to Lens (diverging cone)
+      const grad1 = bCtx.createLinearGradient(srcX, axisY, lensX, axisY);
+      grad1.addColorStop(0, "rgba(245, 158, 11, 0.55)");
+      grad1.addColorStop(1, "rgba(245, 158, 11, 0.22)");
+      bCtx.fillStyle = grad1;
+      bCtx.beginPath();
+      bCtx.moveTo(srcX + 12, axisY - 6);
+      bCtx.lineTo(lensX, axisY - 34);
+      bCtx.lineTo(lensX, axisY + 34);
+      bCtx.lineTo(srcX + 12, axisY + 6);
+      bCtx.closePath();
+      bCtx.fill();
+
+      // 2. Lens to Polarizer (collimated unpolarized beam)
+      bCtx.fillStyle = "rgba(245, 158, 11, 0.2)";
+      bCtx.fillRect(lensX, axisY - 30, polX - lensX, 60);
+
+      // Unpolarized multi-angle oscillation arrows
+      for (let x = lensX + 25; x < polX - 15; x += 36) {
+        const amp = 18 * Math.sin(state.phase + x * 0.05);
+        bCtx.strokeStyle = "rgba(217, 119, 6, 0.85)";
+        bCtx.lineWidth = 1.5;
+        bCtx.beginPath();
+        bCtx.moveTo(x, axisY - amp);
+        bCtx.lineTo(x, axisY + amp);
+        bCtx.moveTo(x - amp * 0.6, axisY - amp * 0.6);
+        bCtx.lineTo(x + amp * 0.6, axisY + amp * 0.6);
+        bCtx.stroke();
+      }
+
+      // 3. Polarizer to Analyzer (plane-polarized vertical beam, half intensity)
+      bCtx.fillStyle = "rgba(2, 132, 199, 0.16)";
+      bCtx.fillRect(polX, axisY - 28, anaX - polX, 56);
+
+      bCtx.strokeStyle = "#0284c7";
+      bCtx.lineWidth = 2;
+      bCtx.beginPath();
+      for (let x = polX + 8; x <= anaX - 8; x += 3) {
+        const y = axisY + 20 * Math.sin(state.phase - x * 0.07);
+        if (x === polX + 8) bCtx.moveTo(x, y);
+        else bCtx.lineTo(x, y);
+      }
+      bCtx.stroke();
+
+      // 4. Analyzer to LDR (intensity proportional to cos^2(theta))
+      if (cos2 > 0.005) {
+        bCtx.fillStyle = "rgba(5, 150, 105, " + (0.24 * cos2).toFixed(3) + ")";
+        bCtx.fillRect(anaX, axisY - 26, ldrX - anaX, 52);
+
+        bCtx.strokeStyle = "rgba(5, 150, 105, " + Math.max(0.3, cos2).toFixed(3) + ")";
+        bCtx.lineWidth = 2;
+        bCtx.beginPath();
+        for (let x = anaX + 8; x <= ldrX - 12; x += 3) {
+          const y = axisY + 20 * Math.abs(cosVal) * Math.sin(state.phase - x * 0.07);
+          if (x === anaX + 8) bCtx.moveTo(x, y);
+          else bCtx.lineTo(x, y);
+        }
+        bCtx.stroke();
+      }
+    }
+
+    // Draw Stands
+    function drawStand(x, label) {
+      bCtx.fillStyle = "#64748b";
+      bCtx.fillRect(x - 3, axisY + 42, 6, 222 - (axisY + 42));
+      bCtx.fillStyle = "#334155";
+      bCtx.font = "600 12px system-ui, sans-serif";
+      bCtx.textAlign = "center";
+      bCtx.fillText(label, x, 254);
+    }
+
+    // 1. Light Source (S)
+    drawStand(srcX, "Source (S)");
+    bCtx.fillStyle = "#475569";
+    bCtx.fillRect(srcX - 22, axisY - 24, 34, 48);
+    bCtx.beginPath();
+    bCtx.arc(srcX + 12, axisY, 13, 0, Math.PI * 2);
+    bCtx.fillStyle = state.lampOn ? "#facc15" : "#94a3b8";
+    bCtx.fill();
+    if (state.lampOn) {
+      bCtx.shadowColor = "#f59e0b";
+      bCtx.shadowBlur = 16;
+      bCtx.fill();
+      bCtx.shadowBlur = 0;
+    }
+
+    // 2. Convex Lens (L)
+    drawStand(lensX, "Lens (L)");
+    bCtx.fillStyle = "rgba(2, 132, 199, 0.22)";
+    bCtx.strokeStyle = "#0284c7";
+    bCtx.lineWidth = 2;
+    bCtx.beginPath();
+    bCtx.ellipse(lensX, axisY, 8, 40, 0, 0, Math.PI * 2);
+    bCtx.fill();
+    bCtx.stroke();
+
+    // 3. Fixed Polarizer (P) - vertical pass axis (0 deg)
+    drawStand(polX, "Polarizer (P: 0°)");
+    bCtx.fillStyle = "rgba(2, 132, 199, 0.12)";
+    bCtx.strokeStyle = "#0284c7";
+    bCtx.lineWidth = 2.5;
+    bCtx.beginPath();
+    bCtx.ellipse(polX, axisY, 14, 42, 0, 0, Math.PI * 2);
+    bCtx.fill();
+    bCtx.stroke();
+    // Vertical grid lines
+    bCtx.strokeStyle = "rgba(2, 132, 199, 0.65)";
+    bCtx.lineWidth = 1.2;
+    for (let dx = -6; dx <= 6; dx += 6) {
+      bCtx.beginPath();
+      bCtx.moveTo(polX + dx, axisY - 34);
+      bCtx.lineTo(polX + dx, axisY + 34);
+      bCtx.stroke();
+    }
+
+    // 4. Rotatable Analyzer (A)
+    drawStand(anaX, "Analyzer (A: " + state.angle + "°)");
+    bCtx.fillStyle = "rgba(5, 150, 105, 0.12)";
+    bCtx.strokeStyle = "#059669";
+    bCtx.lineWidth = 2.5;
+    bCtx.beginPath();
+    bCtx.ellipse(anaX, axisY, 14, 42, 0, 0, Math.PI * 2);
+    bCtx.fill();
+    bCtx.stroke();
+
+    // Rotating axis indicator line inside analyzer
+    const axisLen = 34;
+    const dx = Math.sin(rad) * 11;
+    const dy = Math.cos(rad) * axisLen;
+    bCtx.strokeStyle = "#059669";
+    bCtx.lineWidth = 2.5;
+    bCtx.beginPath();
+    bCtx.moveTo(anaX - dx, axisY - dy);
+    bCtx.lineTo(anaX + dx, axisY + dy);
+    bCtx.stroke();
+
+    // 5. LDR / Photocell Detector
+    drawStand(ldrX, "LDR Detector");
+    bCtx.fillStyle = "#e2e8f0";
+    bCtx.strokeStyle = state.ldrOn ? "#059669" : "#64748b";
+    bCtx.lineWidth = 2.5;
+    bCtx.fillRect(ldrX - 14, axisY - 26, 28, 52);
+    bCtx.strokeRect(ldrX - 14, axisY - 26, 28, 52);
+    // Sensor face
+    bCtx.fillStyle = state.lampOn && cos2 > 0.05 ? "#d97706" : "#94a3b8";
+    bCtx.beginPath();
+    bCtx.arc(ldrX - 14, axisY, 12, Math.PI * 0.5, Math.PI * 1.5);
+    bCtx.fill();
+
+    // HUD readout on canvas
+    bCtx.fillStyle = "#334155";
+    bCtx.font = "600 12px monospace";
+    bCtx.textAlign = "left";
+    bCtx.fillText("θ = " + state.angle + "°  |  cos²θ = " + cos2.toFixed(3), 24, 24);
+  }
+
+  // Draw Linear & Polar Graphs
+  function drawGraphs() {
+    drawLinearGraph();
+    drawPolarGraph();
+  }
+
+  function drawLinearGraph() {
+    const w = linearCanvas.width;
+    const h = linearCanvas.height;
+    lCtx.clearRect(0, 0, w, h);
+
+    const padL = 58, padR = 24, padT = 24, padB = 46;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+    const maxY = 160;
+
+    // Grid
+    lCtx.strokeStyle = "#e2e8f0";
+    lCtx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+      const x = padL + (plotW * i) / 5;
+      lCtx.beginPath(); lCtx.moveTo(x, padT); lCtx.lineTo(x, padT + plotH); lCtx.stroke();
+    }
+    for (let j = 0; j <= 4; j++) {
+      const y = padT + (plotH * j) / 4;
+      lCtx.beginPath(); lCtx.moveTo(padL, y); lCtx.lineTo(padL + plotW, y); lCtx.stroke();
+    }
+
+    // Axes
+    lCtx.strokeStyle = "#64748b";
+    lCtx.lineWidth = 1.5;
+    lCtx.beginPath();
+    lCtx.moveTo(padL, padT);
+    lCtx.lineTo(padL, padT + plotH);
+    lCtx.lineTo(padL + plotW, padT + plotH);
+    lCtx.stroke();
+
+    // Labels
+    lCtx.fillStyle = "#475569";
+    lCtx.font = "11px system-ui, sans-serif";
+    lCtx.textAlign = "center";
+    for (let i = 0; i <= 5; i++) {
+      const val = (i * 0.2).toFixed(1);
+      lCtx.fillText(val, padL + (plotW * i) / 5, padT + plotH + 16);
+    }
+    lCtx.fillText("cos²θ", padL + plotW / 2, h - 10);
+
+    lCtx.textAlign = "right";
+    for (let j = 0; j <= 4; j++) {
+      const val = Math.round((maxY * (4 - j)) / 4);
+      lCtx.fillText(val, padL - 8, padT + (plotH * j) / 4 + 4);
+    }
+    lCtx.save();
+    lCtx.translate(16, padT + plotH / 2);
+    lCtx.rotate(-Math.PI / 2);
+    lCtx.textAlign = "center";
+    lCtx.fillText("I − I0 (μA)", 0, 0);
+    lCtx.restore();
+
+    // Theoretical reference line
+    lCtx.save();
+    lCtx.setLineDash([4, 4]);
+    lCtx.strokeStyle = "rgba(2, 132, 199, 0.5)";
+    lCtx.beginPath();
+    lCtx.moveTo(padL, padT + plotH);
+    lCtx.lineTo(padL + plotW, padT + plotH - (state.maxPhotoCurrent / maxY) * plotH);
+    lCtx.stroke();
+    lCtx.restore();
+
+    // Plot points from Part A
+    const keys = Object.keys(state.dataA).map(Number).sort((a, b) => b - a);
+    if (keys.length > 0) {
+      lCtx.strokeStyle = "#059669";
+      lCtx.lineWidth = 2;
+      lCtx.beginPath();
+      keys.forEach(function (a, idx) {
+        const cos2 = Math.pow(Math.cos((a * Math.PI) / 180), 2);
+        const net = Math.max(0, state.dataA[a].obs - state.recordedDarkCurrent);
+        const px = padL + cos2 * plotW;
+        const py = padT + plotH - Math.min(1, net / maxY) * plotH;
+        if (idx === 0) lCtx.moveTo(px, py);
+        else lCtx.lineTo(px, py);
+      });
+      lCtx.stroke();
+
+      keys.forEach(function (a) {
+        const cos2 = Math.pow(Math.cos((a * Math.PI) / 180), 2);
+        const net = Math.max(0, state.dataA[a].obs - state.recordedDarkCurrent);
+        const px = padL + cos2 * plotW;
+        const py = padT + plotH - Math.min(1, net / maxY) * plotH;
+        lCtx.fillStyle = "#059669";
+        lCtx.beginPath();
+        lCtx.arc(px, py, 4.5, 0, Math.PI * 2);
+        lCtx.fill();
+      });
+    }
+  }
+
+  function drawPolarGraph() {
+    const w = polarCanvas.width;
+    const h = polarCanvas.height;
+    pCtx.clearRect(0, 0, w, h);
+
+    const cx = w / 2;
+    const cy = h / 2;
+    const maxR = Math.min(w, h) * 0.37;
+    const maxI = 160;
+
+    // Concentric rings
+    pCtx.strokeStyle = "#e2e8f0";
+    pCtx.lineWidth = 1;
+    for (let r = 1; r <= 4; r++) {
+      pCtx.beginPath();
+      pCtx.arc(cx, cy, (maxR * r) / 4, 0, Math.PI * 2);
+      pCtx.stroke();
+    }
+
+    // Radial spokes every 30 deg
+    pCtx.fillStyle = "#475569";
+    pCtx.font = "11px system-ui, sans-serif";
+    pCtx.textAlign = "center";
+    pCtx.textBaseline = "middle";
+    for (let deg = 0; deg < 360; deg += 30) {
+      const rad = (deg * Math.PI) / 180;
+      const x2 = cx + maxR * Math.cos(rad);
+      const y2 = cy - maxR * Math.sin(rad);
+      pCtx.strokeStyle = "#e2e8f0";
+      pCtx.beginPath();
+      pCtx.moveTo(cx, cy);
+      pCtx.lineTo(x2, y2);
+      pCtx.stroke();
+
+      const lx = cx + (maxR + 18) * Math.cos(rad);
+      const ly = cy - (maxR + 18) * Math.sin(rad);
+      pCtx.fillText(deg + "°", lx, ly);
+    }
+
+    // Theoretical figure-8 reference curve
+    pCtx.save();
+    pCtx.setLineDash([4, 4]);
+    pCtx.strokeStyle = "rgba(2, 132, 199, 0.5)";
+    pCtx.beginPath();
+    for (let deg = 0; deg <= 360; deg += 2) {
+      const rad = (deg * Math.PI) / 180;
+      const r = (state.maxPhotoCurrent * Math.pow(Math.cos(rad), 2) / maxI) * maxR;
+      const px = cx + r * Math.cos(rad);
+      const py = cy - r * Math.sin(rad);
+      if (deg === 0) pCtx.moveTo(px, py);
+      else pCtx.lineTo(px, py);
+    }
+    pCtx.stroke();
+    pCtx.restore();
+
+    // Plot points from Part B
+    const keys = Object.keys(state.dataB).map(Number).sort((a, b) => a - b);
+    if (keys.length > 0) {
+      pCtx.strokeStyle = "#d97706";
+      pCtx.lineWidth = 2;
+      pCtx.beginPath();
+      keys.forEach(function (deg, idx) {
+        const rad = (deg * Math.PI) / 180;
+        const net = Math.max(0, state.dataB[deg].obs - state.recordedDarkCurrent);
+        const r = Math.min(1, net / maxI) * maxR;
+        const px = cx + r * Math.cos(rad);
+        const py = cy - r * Math.sin(rad);
+        if (idx === 0) pCtx.moveTo(px, py);
+        else pCtx.lineTo(px, py);
+      });
+      pCtx.stroke();
+
+      keys.forEach(function (deg) {
+        const rad = (deg * Math.PI) / 180;
+        const net = Math.max(0, state.dataB[deg].obs - state.recordedDarkCurrent);
+        const r = Math.min(1, net / maxI) * maxR;
+        const px = cx + r * Math.cos(rad);
+        const py = cy - r * Math.sin(rad);
+        pCtx.fillStyle = "#d97706";
+        pCtx.beginPath();
+        pCtx.arc(px, py, 4.5, 0, Math.PI * 2);
+        pCtx.fill();
+      });
+    }
+  }
+
+  // Animation Loop
+  function animate() {
+    state.phase += 0.12;
+    drawBench();
+    requestAnimationFrame(animate);
+  }
+
+  // Initialize
+  updateMeters();
+  renderTables();
+  drawGraphs();
+  animate();
+});
+</script>
+</body>
+</html>
